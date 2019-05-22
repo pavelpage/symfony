@@ -4,3 +4,7 @@
 #index:
 #    path: /
 #    defaults: { _controller: 'App\Controller\DefaultController::index' }
+
+#store-files:
+#  path: /api/image/store-files
+#  controller: 'App\Controller\DefaultController::index'
