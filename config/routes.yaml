@@ -5,6 +5,11 @@
 #    path: /
 #    defaults: { _controller: 'App\Controller\DefaultController::index' }
 
-#store-files:
-#  path: /api/image/store-files
-#  controller: 'App\Controller\DefaultController::index'
+api.store-files:
+  path: /api/images/store-files
+  controller: 'App\Controller\ApiImageController::storeFile'
+  methods: POST
+api.test:
+    path: /test
+    controller: 'App\Controller\ApiImageController::testUpload'
+    methods: GET

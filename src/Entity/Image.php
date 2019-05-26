@@ -6,7 +6,7 @@ use ApiPlatform\Core\Annotation\ApiResource;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * @ApiResource()
+ *
  * @ORM\Entity(repositoryClass="App\Repository\ImageRepository")
  */
 class Image
@@ -31,7 +31,7 @@ class Image
     /**
      * @ORM\Column(type="json", nullable=true)
      */
-    private $file_info = [];
+    private $file_info;
 
     /**
      * @ORM\Column(type="json", nullable=true)
@@ -77,14 +77,14 @@ class Image
         return $this;
     }
 
-    public function getFileInfo(): ?array
+    public function getFileInfo()
     {
-        return $this->file_info;
+        return json_decode($this->file_info);
     }
 
     public function setFileInfo(?array $file_info): self
     {
-        $this->file_info = $file_info;
+        $this->file_info = json_encode($file_info);
 
         return $this;
     }

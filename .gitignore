@@ -9,4 +9,9 @@
 ###< symfony/framework-bundle ###
 /.idea
 .env
-.env.testing
+.env.test
+###> symfony/phpunit-bridge ###
+.phpunit
+/phpunit.xml
+###< symfony/phpunit-bridge ###
+/public/upload
