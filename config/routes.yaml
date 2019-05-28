@@ -13,6 +13,10 @@ api.store-from-remote-source:
   path: /api/images/store-from-remote-source
   controller: 'App\Controller\ApiImageController::saveFileFromUrl'
   methods: POST
+api.store-from-base64:
+  path: /api/images/store-from-base64
+  controller: 'App\Controller\ApiImageController::saveFileFromBase64'
+  methods: POST
 api.test:
     path: /test
     controller: 'App\Controller\ApiImageController::testUpload'

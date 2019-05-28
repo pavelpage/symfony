@@ -4,6 +4,7 @@
 namespace App\Controller;
 
 use App\Entity\Image;
+use App\Form\Base64FormType;
 use App\Form\ExternalUrlsType;
 use App\Form\ImageFormType;
 use App\Services\ImageService;
@@ -70,7 +71,7 @@ class ApiImageController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $request->get('image_form')['urls'];
+            $data = $request->get('external_urls')['urls'];
             $savedFiles = $this->imageService->uploadFromUrls($data);
         }
         else {
@@ -80,15 +81,33 @@ class ApiImageController extends AbstractController
             ]);
         }
 
-        return [
+        return $this->json([
             'items' => $savedFiles->getSavedFiles(),
             'errors' => $savedFiles->getErrors(),
-        ];
+        ]);
     }
 
-    public function saveFileFromBase64()
+    public function saveFileFromBase64(Request $request)
     {
+        $image = new Image();
+        $form = $this->createForm(Base64FormType::class, $image);
+        $form->handleRequest($request);
 
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $request->get('base64_form')['files'];
+            $savedFiles = $this->imageService->saveFilesFromBase64($data);
+        }
+        else {
+            return $this->json([
+                'items' => $form->getData(),
+                'errors' => $form->getErrors(),
+            ]);
+        }
+
+        return $this->json([
+            'items' => $savedFiles->getSavedFiles(),
+            'errors' => $savedFiles->getErrors(),
+        ]);
     }
 
     public function createResize()

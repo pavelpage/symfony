@@ -209,4 +209,67 @@ class ImageService
     {
         return substr($url, strrpos($url, '/') + 1);
     }
+
+    public function saveFilesFromBase64($files)
+    {
+        $savedFiles = new SavedFiles();
+
+        foreach ($files as $file) {
+            try {
+                $savedFile = $this->saveFileFromBase64($file);
+                $imageItem = $this->addImageItemToDb($savedFile->getFilename(), $savedFile->getOriginalFileName(), $savedFile->getSize());
+//                CreateResize::dispatch($imageItem->id);
+                $savedFiles->pushSavedFile($imageItem);
+            } catch (\Exception $e) {
+                $savedFiles->pushError([$e->getCode(), $e->getMessage()]);
+            }
+        }
+
+        return $savedFiles;
+    }
+
+    /**
+     * @param $base64String
+     * @return SavedFile
+     * @throws \Exception
+     */
+    private function saveFileFromBase64($base64String)
+    {
+        $data = explode(',', $base64String);
+        $content = base64_decode($data[1]);
+        $fileExtension = $this->getExtensionFromBase64String($base64String);
+        $fileName = $this->generateUniqueName($fileExtension);
+
+        $fullPath = $this->kernel->getProjectDir(). '/public/upload/' .$this->originalFolderName .'/'.$fileName;
+        file_put_contents($fullPath, $content);
+
+        return new SavedFile($fileName, $fileName, filesize($fullPath));
+    }
+
+    /**
+     * @param $base64String
+     * @return string
+     * @throws \Exception
+     */
+    public function getExtensionFromBase64String($base64String)
+    {
+        $data = explode(',', $base64String);
+        $mimeType = explode(':',$data[0]);
+        $mimeType = $mimeType[1];
+
+        $mimeType = substr($mimeType, 0, strpos($mimeType, ';'));
+
+        $extensionsArr = [
+            'image/gif' => 'gif',
+            'image/jpeg' => 'jpeg',
+            'image/pjpeg' => 'jpeg',
+            'image/png' => 'png',
+        ];
+
+        if (!isset($extensionsArr[$mimeType])) {
+            throw new \Exception('Unsupported mime type of base64 image');
+        }
+
+        return $extensionsArr[$mimeType];
+    }
 }

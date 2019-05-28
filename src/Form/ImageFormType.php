@@ -36,16 +36,7 @@ class ImageFormType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-//        var_dump('here');
-
-
         $builder
-//            ->add('files', FileType::class, [
-//                'mapped' => false,
-//                'multiple' => true,
-//                'required' => true,
-//                'constraints' => [ new File(['maxSize' => round(3*1024)]) ]
-//            ])
             ->add('files', CollectionType::class, [
                 // each entry in the array will be an "email" field
                 'mapped' => false,
@@ -59,16 +50,6 @@ class ImageFormType extends AbstractType
                     'constraints' => [ new File(['maxSize' => $this->container->getParameter('file_upload.max_size')]) ]
                 ],
             ])
-
-//            ->add('emails', CollectionType::class, [
-//                // each entry in the array will be an "email" field
-//                'entry_type' => TextType::class,
-//                'mapped' => false,
-//                // these options are passed to each "email" type
-//                'entry_options' => [
-//                    'attr' => ['class' => 'email-box'],
-//                ],
-//            ])
 
             ->add('save', SubmitType::class, ['label' => 'Create'])
             ->setAction('/api/images/store-files')

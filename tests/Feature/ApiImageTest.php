@@ -83,4 +83,26 @@ class ApiImageTest extends WebTestCase
 
         $this->assertEquals(422, $client->getResponse()->getStatusCode());
     }
+
+    public function test_it_can_store_base64_strings_as_files()
+    {
+        $client = static::createClient();
+
+        $base64 = file_get_contents($client->getContainer()->get('kernel')->getProjectDir().'/tests/base64_example.txt');
+        $client->request('POST', $client->getContainer()->get('router')->generate(
+            'api.store-from-base64'
+        ), [
+            'base64_form' => [
+                'files' => [
+                    $base64
+                ]
+            ]
+        ]);
+
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $content = json_decode($client->getResponse()->getContent());
+
+        $this->assertCount(1, $content->items);
+        $this->assertCount(0, $content->errors);
+    }
 }
