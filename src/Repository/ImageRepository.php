@@ -55,4 +55,32 @@ class ImageRepository extends ServiceEntityRepository
         ;
     }
     */
+
+    /**
+     * @param $imageItem Image
+     * @param $width
+     * @param $height
+     */
+    public function addResize($imageItem, $width, $height)
+    {
+        $resizes = $imageItem->getResizes();
+        $resizes[] = ['width' => $width, 'height' => $height];
+
+        $this->resizes = $resizes;
+        $imageItem->setResizes($resizes);
+
+        $this->getEntityManager()->flush();
+    }
+
+    public function deleteResize($width, $height)
+    {
+        $resizes = collect($this->resizes);
+
+        $resizes = array_filter($resizes,function($item) use ($width, $height){
+            return !($item['width'] == $width && $item['height'] == $height);
+        });
+
+        $this->resizes = $resizes->values()->toArray();
+        $this->save();
+    }
 }

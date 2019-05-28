@@ -8,9 +8,11 @@ use App\Entity\Image;
 use App\Kernel;
 use App\Repository\ImageRepository;
 use GuzzleHttp\Client;
+use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
+use Intervention\Image\ImageManager;
 
 class ImageService
 {
@@ -35,13 +37,19 @@ class ImageService
      */
     private $maxFileUploadSize;
 
+    /** @var ImageManager  */
+    private $imageManager;
+
+    /** @var \Symfony\Component\Asset\Packages  */
+    private $assetManager;
+
     /**
      * ImageService constructor.
      * @param ImageRepository $imageRepository
      * @param KernelInterface $kernel
      * @param ContainerInterface $container
      */
-    public function __construct(ImageRepository $imageRepository, KernelInterface $kernel, ContainerInterface $container)
+    public function __construct(ImageRepository $imageRepository, KernelInterface $kernel, ContainerInterface $container, \Symfony\Component\Asset\Packages $assetsManager)
     {
         $this->originalFolderName = 'originals';
         $this->resizeFolderName = 'resize';
@@ -50,6 +58,9 @@ class ImageService
         $this->kernel = $kernel;
         $this->container = $container;
         $this->maxFileUploadSize = round(1024*3);
+        $this->imageManager = new ImageManager(array('driver' => 'gd'));
+        $this->filesystem = new Filesystem();
+        $this->assetManager = $assetsManager;
     }
 
     /**
@@ -271,5 +282,103 @@ class ImageService
         }
 
         return $extensionsArr[$mimeType];
+    }
+
+    /**
+     * @param $imageId
+     * @param int $width
+     * @param int $height
+     * @return string
+     * @throws \Exception
+     */
+    public function createResize($imageId, $width = 100, $height = 100)
+    {
+        $imageItem = $entityManager = $this->imageRepository->find($imageId);
+        if (!$imageItem) {
+            throw new \Exception('No image with such id');
+        }
+
+        $fullPath = $this->kernel->getProjectDir(). '/public/upload/' .$this->originalFolderName .'/'.$imageItem->getName();
+        $image = $this->imageManager->make(file_get_contents($fullPath));
+
+        $publicDir = $this->kernel->getProjectDir(). '/public/'.($this->diskFolderName.'/'.$this->resizeFolderName);
+        if (!is_dir($publicDir)) {
+            $this->filesystem->mkdir($publicDir, 0755);
+        }
+
+        $resizeImageName = $this->getResizeImageName($imageItem->getName(), $width, $height);
+
+        $image->resize($width, $height)->save($publicDir.'/'.$resizeImageName);
+
+        $this->imageRepository->addResize($imageItem, $width, $height);
+
+        return $this->assetManager->getUrl($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName);
+    }
+
+    /**
+     * @param $imageName
+     * @param $width
+     * @param $height
+     * @return string
+     */
+    public function getResizeImageName($imageName, $width, $height)
+    {
+        return $this->getNameWithoutExtension($imageName) .
+            '_[resize_' . $width . 'x' . $height . '].' .
+            $this->getFileExtension($imageName);
+    }
+
+    /**
+     * @param $name
+     * @return bool|string
+     */
+    private function getNameWithoutExtension($name)
+    {
+        $posLastPoint = mb_strrpos($name, ".");
+
+        if ($posLastPoint !== false) {
+            $name = mb_substr($name, 0, $posLastPoint);
+            return $name;
+        }
+        return false;
+    }
+
+    /**
+     * @param $fileName
+     * @return bool|string
+     */
+    private function getFileExtension($fileName)
+    {
+        $lastDotPos = mb_strrpos($fileName, '.');
+        if ( !$lastDotPos ) return false;
+        return mb_substr($fileName, $lastDotPos+1);
+    }
+
+    /**
+     * @param $imageId
+     * @return array
+     * @throws \Exception
+     */
+    public function getImageResizes($imageId)
+    {
+        $imageItem = $entityManager = $this->imageRepository->find($imageId);
+        if (!$imageItem) {
+            throw new \Exception('No image with such id');
+        }
+        $resizes = $imageItem->getResizes();
+
+        $result = [];
+        foreach ($resizes as $resize) {
+
+            $resizeImageName = $this->getResizeImageName($imageItem->getName(), $resize['width'], $resize['height']);
+
+            $result[] = [
+                'url' => $this->assetManager->getUrl($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName),
+                'width' => $resize['width'],
+                'height' => $resize['height'],
+            ];
+        }
+
+        return $result;
     }
 }

@@ -110,14 +110,32 @@ class ApiImageController extends AbstractController
         ]);
     }
 
-    public function createResize()
+    /**
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @throws \Exception
+     */
+    public function createResize(Request $request)
     {
+        $resizeUrl = $this->imageService->createResize(
+            $request->get('image_id'), $request->get('width', 100), $request->get('height', 100)
+        );
 
+        return $this->json([
+            'url' => $resizeUrl,
+        ]);
     }
 
-    public function getImageResizes()
+    /**
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @throws \Exception
+     */
+    public function getImageResizes(Request $request)
     {
-
+        return $this->json(
+            $this->imageService->getImageResizes($request->get('image_id'))
+        );
     }
 
     public function deleteImageResize()

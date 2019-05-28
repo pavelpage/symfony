@@ -17,6 +17,14 @@ api.store-from-base64:
   path: /api/images/store-from-base64
   controller: 'App\Controller\ApiImageController::saveFileFromBase64'
   methods: POST
+api.create-resize:
+  path: /api/images/create-resize
+  controller: 'App\Controller\ApiImageController::createResize'
+  methods: POST
+api.get-image-resizes:
+  path: /api/images/resizes
+  controller: 'App\Controller\ApiImageController::getImageResizes'
+  methods: GET
 api.test:
     path: /test
     controller: 'App\Controller\ApiImageController::testUpload'

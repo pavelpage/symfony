@@ -4,6 +4,7 @@
 namespace App\Tests\Feature;
 
 
+use App\Services\ImageService;
 use AppKernel;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -104,5 +105,61 @@ class ApiImageTest extends WebTestCase
 
         $this->assertCount(1, $content->items);
         $this->assertCount(0, $content->errors);
+    }
+
+    public function test_it_should_not_store_incorrect_base64_strings()
+    {
+        $client = static::createClient();
+        $client->request('POST', $client->getContainer()->get('router')->generate(
+            'api.store-from-base64'
+        ), [
+            'base64_form' => [
+                'files' => [
+                    'wrong base 64 string'
+                ]
+            ]
+        ]);
+
+        $content = json_decode($client->getResponse()->getContent());
+
+        $this->assertCount(0, $content->items);
+        $this->assertCount(1, $content->errors);
+    }
+
+    private function saveFiles()
+    {
+        $client = static::createClient();
+        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
+        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg');
+
+
+        $client->request('POST', $client->getContainer()->get('router')->generate(
+            'api.store-files'
+        ), [
+
+        ],[
+            'image_form' => [
+                'files' => [
+                    new UploadedFile(
+                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
+                        'dummy2.jpeg',
+                        'image/jpeg',
+                        100
+                    ),
+                    new UploadedFile(
+                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
+                        'dummy3.jpeg',
+                        'image/jpeg',
+                        100
+                    )
+                ]
+            ]
+        ]);
+
+        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+
+        $content = json_decode($client->getResponse()->getContent());
+
+        return $content->items;
     }
 }
