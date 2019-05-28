@@ -138,9 +138,15 @@ class ApiImageController extends AbstractController
         );
     }
 
-    public function deleteImageResize()
+    public function deleteImageResize(Request $request)
     {
+        $successDelete = $this->imageService->deleteImageResize(
+            $request->get('image_id'), $request->get('width'), $request->get('height')
+        );
 
+        return $this->json([
+            'deleted' => $successDelete,
+        ]);
     }
 
     public function deleteAllImageResizes()

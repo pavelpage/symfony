@@ -72,15 +72,21 @@ class ImageRepository extends ServiceEntityRepository
         $this->getEntityManager()->flush();
     }
 
-    public function deleteResize($width, $height)
+    /**
+     * @param $imageItem Image
+     * @param $width
+     * @param $height
+     */
+    public function deleteResize($imageItem, $width, $height)
     {
-        $resizes = collect($this->resizes);
+        $resizes = $imageItem->getResizes();
 
         $resizes = array_filter($resizes,function($item) use ($width, $height){
             return !($item['width'] == $width && $item['height'] == $height);
         });
 
-        $this->resizes = $resizes->values()->toArray();
-        $this->save();
+        $imageItem->setResizes($resizes);
+
+        $this->getEntityManager()->flush();
     }
 }

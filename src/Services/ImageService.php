@@ -381,4 +381,27 @@ class ImageService
 
         return $result;
     }
+
+    /**
+     * @param $imageId
+     * @param $width
+     * @param $height
+     * @return bool
+     * @throws \Exception
+     */
+    public function deleteImageResize($imageId, $width, $height)
+    {
+        $imageItem = $entityManager = $this->imageRepository->find($imageId);
+        if (!$imageItem) {
+            throw new \Exception('No image with such id');
+        }
+
+        $resizeImageName = $this->getResizeImageName($imageItem->getName(), $width, $height);
+
+        $this->filesystem->remove($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName);
+
+        $this->imageRepository->deleteResize($imageItem, $width, $height);
+
+        return true;
+    }
 }

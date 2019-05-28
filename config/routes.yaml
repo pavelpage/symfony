@@ -25,6 +25,10 @@ api.get-image-resizes:
   path: /api/images/resizes
   controller: 'App\Controller\ApiImageController::getImageResizes'
   methods: GET
+api.delete-resize:
+  path: /api/images/resize
+  controller: 'App\Controller\ApiImageController::deleteImageResize'
+  methods: DELETE
 api.test:
     path: /test
     controller: 'App\Controller\ApiImageController::testUpload'
