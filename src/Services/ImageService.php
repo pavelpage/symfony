@@ -7,6 +7,7 @@ use App\Business\SavedFile;
 use App\Entity\Image;
 use App\Kernel;
 use App\Repository\ImageRepository;
+use GuzzleHttp\Client;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
@@ -29,6 +30,11 @@ class ImageService
      */
     private $container;
 
+    /*
+     * @var int
+     */
+    private $maxFileUploadSize;
+
     /**
      * ImageService constructor.
      * @param ImageRepository $imageRepository
@@ -43,6 +49,7 @@ class ImageService
         $this->imageRepository = $imageRepository;
         $this->kernel = $kernel;
         $this->container = $container;
+        $this->maxFileUploadSize = round(1024*3);
     }
 
     /**
@@ -115,14 +122,91 @@ class ImageService
     }
 
     /**
+     * @param $urlsArr
+     * @return SavedFiles
+     */
+    public function uploadFromUrls($urlsArr)
+    {
+        $savedFiles = new SavedFiles();
+
+        foreach ($urlsArr as $url) {
+            try {
+                $savedFile = $this->uploadFromUrl($url);
+                $imageItem = $this->addImageItemToDb($savedFile->getFilename(), $savedFile->getOriginalFileName(), $savedFile->getSize());
+//                CreateResize::dispatch($imageItem->id);
+                $savedFiles->pushSavedFile($imageItem);
+            } catch (\Exception $e) {
+                $savedFiles->pushError([$e->getCode(), $e->getMessage(), $url]);
+            }
+        }
+
+        return $savedFiles;
+    }
+
+    /**
+     * @param $url
+     * @return SavedFile
+     * @throws \Exception
+     */
+    public function uploadFromUrl($url)
+    {
+        $imageInfo = @getimagesize($url);
+
+        if (!$imageInfo) {
+            throw new \Exception('File should be image format!');
+        }
+
+        $fileExtension = $this->getExtensionFromMimeInfo($imageInfo);
+        if (!in_array($fileExtension, ['jpg','jpeg', 'JPG', 'PNG', 'png', 'gif', 'bmp', 'svg'])) {
+            throw new \Exception('File should be image format!');
+        }
+
+        $client = new Client();
+
+        $response = $client->get($url)->getBody();
+
+        $fileStream = $response->getContents();
+        $originalFileName = $this->getOriginalNameFromUrl($url);
+        $fileSize = $response->getSize() / 1024;
+
+        if ($fileSize > $this->maxFileUploadSize) {
+            throw new \Exception('too big image for this request');
+        }
+
+        $filename = $this->generateUniqueName($fileExtension);
+        $fullPath = $this->kernel->getProjectDir(). '/public/upload/' .$this->originalFolderName .'/'.$filename;
+        file_put_contents($fullPath, $fileStream);
+
+        return new SavedFile($filename, $originalFileName, $response->getSize());
+    }
+
+    /**
      * @param $extension
      * @return string
      * @throws \Exception
      */
     public function generateUniqueName($extension)
     {
-        $randomString = md5(uniqid()).'-'.microtime(true);
+        $randomString = md5(uniqid()).'-'.time();
         $newName = $randomString . '.' . $extension;
         return $newName;
+    }
+
+    /**
+     * @param $info
+     * @return mixed
+     */
+    private function getExtensionFromMimeInfo($info)
+    {
+        return explode('/', $info['mime'])[1];
+    }
+
+    /**
+     * @param $url
+     * @return bool|string
+     */
+    private function getOriginalNameFromUrl($url)
+    {
+        return substr($url, strrpos($url, '/') + 1);
     }
 }

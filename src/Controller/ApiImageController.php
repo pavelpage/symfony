@@ -4,8 +4,10 @@
 namespace App\Controller;
 
 use App\Entity\Image;
+use App\Form\ExternalUrlsType;
 use App\Form\ImageFormType;
 use App\Services\ImageService;
+use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,18 +28,6 @@ class ApiImageController extends AbstractController
     public function __construct(ImageService $imageService)
     {
         $this->imageService = $imageService;
-    }
-
-    /**
-     * @Route("/lucky/number")
-     */
-    public function numberAction()
-    {
-        $number = random_int(0, 100);
-
-        return new Response(
-            '<html><body>Lucky number: '.$number.'</body></html>'
-        );
     }
 
     public function testUpload()
@@ -61,11 +51,10 @@ class ApiImageController extends AbstractController
             $savedFiles = $this->imageService->saveFilesAndRetrieveItems($files);
         }
         else {
-//            var_dump($request->files);exit;
             return $this->json([
-                'items' => $form->getData(),
+                'items' => [],
                 'errors' => $form->getErrors(),
-            ]);
+            ], $status = 422);
         }
 
         return $this->json([
@@ -74,9 +63,27 @@ class ApiImageController extends AbstractController
         ]);
     }
 
-    public function saveFileFromUrl()
+    public function saveFileFromUrl(Request $request)
     {
+        $image = new Image();
+        $form = $this->createForm(ExternalUrlsType::class, $image);
+        $form->handleRequest($request);
 
+        if ($form->isSubmitted() && $form->isValid()) {
+            $data = $request->get('image_form')['urls'];
+            $savedFiles = $this->imageService->uploadFromUrls($data);
+        }
+        else {
+            return $this->json([
+                'items' => $form->getData(),
+                'errors' => $form->getErrors(),
+            ]);
+        }
+
+        return [
+            'items' => $savedFiles->getSavedFiles(),
+            'errors' => $savedFiles->getErrors(),
+        ];
     }
 
     public function saveFileFromBase64()

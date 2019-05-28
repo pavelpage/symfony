@@ -9,6 +9,10 @@ api.store-files:
   path: /api/images/store-files
   controller: 'App\Controller\ApiImageController::storeFile'
   methods: POST
+api.store-from-remote-source:
+  path: /api/images/store-from-remote-source
+  controller: 'App\Controller\ApiImageController::saveFileFromUrl'
+  methods: POST
 api.test:
     path: /test
     controller: 'App\Controller\ApiImageController::testUpload'

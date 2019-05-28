@@ -1,3 +1,13 @@
 {{ form_start(form) }}
-{{ form_widget(form) }}
+{#{{ form_widget(form) }}#}
+
+<div>
+    <label for="image_form_files" class="required">Files</label>
+    <input type="file" id="image_form_files" name="image_form[files][]" required="required" multiple="multiple">
+</div>
+
+{#{{ form_errors(form) }}#}
+
+    {#{{ form_row(form.files) }}#}
+    {#{{ form_row(form.emails) }}#}
 {{ form_end(form) }}

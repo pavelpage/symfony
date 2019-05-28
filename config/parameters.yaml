@@ -1,0 +1,2 @@
+file.upload:
+  max: '%env(MAX_IMAGE_SIZE)%'
