@@ -4,6 +4,7 @@
 namespace App\Tests\Feature;
 
 
+use App\Services\ImageService;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
@@ -134,6 +135,102 @@ class ApiImageTest extends WebTestCase
         $this->assertCount(1, $content->errors);
     }
 
+    public function test_it_can_create_resize_for_specific_image()
+    {
+        $savedFiles = $this->saveFiles();
+        $imageId = $savedFiles[0]->id;
+        $imageName = $savedFiles[0]->name;
+
+        $width = 120;
+        $height = 120;
+
+        $client = static::createClient();
+        $client->request('POST', $client->getContainer()->get('router')->generate(
+            'api.create-resize'
+        ), [
+            'image_id' => $imageId,
+            'width' => $width,
+            'height' => $height,
+        ]);
+
+        $resizeName = self::$container->get(ImageService::class)->getResizeImageName($imageName, $width, $height);
+
+        $this->assertFileExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName);
+    }
+
+    public function test_it_can_delete_all_resizes()
+    {
+        $savedFiles = $this->saveFiles();
+        $imageId = $savedFiles[0]->id;
+        $imageName = $savedFiles[0]->name;
+
+        $client = static::createClient();
+        $client->request('POST', $client->getContainer()->get('router')->generate(
+            'api.create-resize'
+        ), [
+            'image_id' => $imageId,
+            'width' => 120,
+            'height' => 120,
+        ]);
+
+        $client->request('DELETE', $client->getContainer()->get('router')->generate(
+            'api.delete-all-resizes'
+        ), [
+            'image_id' => $imageId,
+        ]);
+
+
+        $imageService = self::$container->get(ImageService::class);
+        $resizeName1 = $imageService->getResizeImageName($imageName, 100, 100);
+        $resizeName2 = $imageService->getResizeImageName($imageName, 120, 120);
+
+        $this->assertFileNotExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName1);
+        $this->assertFileNotExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName2);
+    }
+
+    public function test_it_delete_default_resize()
+    {
+        $savedFiles = $this->saveFiles();
+        $imageId = $savedFiles[0]->id;
+        $imageName = $savedFiles[0]->name;
+
+        $client = static::createClient();
+        $client->request('DELETE', $client->getContainer()->get('router')->generate(
+            'api.delete-resize'
+        ), [
+            'image_id' => $imageId,
+            'width' => 100,
+            'height' => 100,
+        ]);
+
+        $imageService = self::$container->get(ImageService::class);
+        $resizeName = $imageService->getResizeImageName($imageName, 100, 100);
+
+        $this->assertFileNotExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName);
+    }
+
+    public function test_it_can_get_list_of_resizes()
+    {
+        $savedFiles = $this->saveFiles();
+        $imageId = $savedFiles[0]->id;
+        $imageName = $savedFiles[0]->name;
+
+        $imageService = self::$container->get(ImageService::class);
+        $resizeName = $imageService->getResizeImageName($imageName, 100, 100);
+
+        $client = static::createClient();
+        $client->request('GET', $client->getContainer()->get('router')->generate(
+            'api.get-image-resizes'
+        ), [
+            'image_id' => $imageId,
+        ]);
+
+        $content = json_decode($client->getResponse()->getContent());
+
+
+        $this->assertEquals($_ENV['APP_HOST'].'upload/resize/'.$resizeName, $content[0]->url);
+    }
+
     private function saveFiles()
     {
         $client = static::createClient();
@@ -161,8 +258,6 @@ class ApiImageTest extends WebTestCase
                 ]
             ]
         ]);
-
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
 
         $content = json_decode($client->getResponse()->getContent());
 

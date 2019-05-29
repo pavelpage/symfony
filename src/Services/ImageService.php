@@ -6,13 +6,18 @@ namespace App\Services;
 use App\Business\SavedFile;
 use App\Entity\Image;
 use App\Kernel;
+use App\Message\ImageResize;
 use App\Repository\ImageRepository;
 use GuzzleHttp\Client;
+use Symfony\Component\Asset\UrlPackage;
+use Symfony\Component\Asset\VersionStrategy\StaticVersionStrategy;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Psr\Container\ContainerInterface;
 use Symfony\Component\HttpKernel\KernelInterface;
 use Intervention\Image\ImageManager;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\DependencyInjection\ContainerInterface as DependencyContainer;
 
 class ImageService
 {
@@ -44,12 +49,24 @@ class ImageService
     private $assetManager;
 
     /**
+     * @var MessageBusInterface
+     */
+    private $bus;
+    /**
+     * @var DependencyContainer
+     */
+    private $dependencyContainer;
+
+    /**
      * ImageService constructor.
      * @param ImageRepository $imageRepository
      * @param KernelInterface $kernel
      * @param ContainerInterface $container
+     * @param \Symfony\Component\Asset\Packages $assetsManager
+     * @param MessageBusInterface $bus
+     * @param DependencyContainer $dependencyContainer
      */
-    public function __construct(ImageRepository $imageRepository, KernelInterface $kernel, ContainerInterface $container, \Symfony\Component\Asset\Packages $assetsManager)
+    public function __construct(ImageRepository $imageRepository, KernelInterface $kernel, ContainerInterface $container, \Symfony\Component\Asset\Packages $assetsManager, MessageBusInterface $bus, DependencyContainer $dependencyContainer)
     {
         $this->originalFolderName = 'originals';
         $this->resizeFolderName = 'resize';
@@ -61,6 +78,8 @@ class ImageService
         $this->imageManager = new ImageManager(array('driver' => 'gd'));
         $this->filesystem = new Filesystem();
         $this->assetManager = $assetsManager;
+        $this->bus = $bus;
+        $this->dependencyContainer = $dependencyContainer;
     }
 
     /**
@@ -74,7 +93,7 @@ class ImageService
                 $size = $file->getSize();
                 $fileName = $this->saveFileAndGetStoredName($file);
                 $imageItem = $this->addImageItemToDb($fileName, $file->getClientOriginalName(), $size);
-                //                CreateResize::dispatch($imageItem->id);
+                $this->bus->dispatch(new ImageResize($imageItem->getId()));
                 $savedFiles->pushSavedFile($imageItem);
             } catch (\Exception $e) {
                 $savedFiles->pushError([$e->getCode(), $e->getMessage(), $file->getClientOriginalName(), $e->getTraceAsString()]);
@@ -145,7 +164,7 @@ class ImageService
             try {
                 $savedFile = $this->uploadFromUrl($url);
                 $imageItem = $this->addImageItemToDb($savedFile->getFilename(), $savedFile->getOriginalFileName(), $savedFile->getSize());
-//                CreateResize::dispatch($imageItem->id);
+                $this->bus->dispatch(new ImageResize($imageItem->getId()));
                 $savedFiles->pushSavedFile($imageItem);
             } catch (\Exception $e) {
                 $savedFiles->pushError([$e->getCode(), $e->getMessage(), $url]);
@@ -230,7 +249,7 @@ class ImageService
             try {
                 $savedFile = $this->saveFileFromBase64($file);
                 $imageItem = $this->addImageItemToDb($savedFile->getFilename(), $savedFile->getOriginalFileName(), $savedFile->getSize());
-//                CreateResize::dispatch($imageItem->id);
+                $this->bus->dispatch(new ImageResize($imageItem->getId()));
                 $savedFiles->pushSavedFile($imageItem);
             } catch (\Exception $e) {
                 $savedFiles->pushError([$e->getCode(), $e->getMessage()]);
@@ -373,8 +392,10 @@ class ImageService
 
             $resizeImageName = $this->getResizeImageName($imageItem->getName(), $resize['width'], $resize['height']);
 
+            $urlPackage = new UrlPackage($this->dependencyContainer->getParameter('app_host'), new StaticVersionStrategy(''));
+
             $result[] = [
-                'url' => $this->assetManager->getUrl($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName),
+                'url' => $urlPackage->getUrl($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName),
                 'width' => $resize['width'],
                 'height' => $resize['height'],
             ];

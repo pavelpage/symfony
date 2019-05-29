@@ -6,6 +6,7 @@
 parameters:
     locale: 'en'
     file_upload.max_size: '%env(MAX_IMAGE_SIZE)%'
+    app_host: '%env(APP_HOST)%'
 
 services:
     # default configuration for services in *this* file
