@@ -4,22 +4,33 @@
 namespace App\Tests\Feature;
 
 
-use App\Services\ImageService;
-use AppKernel;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Bundle\FrameworkBundle\Console\Application;
 
 class ApiImageTest extends WebTestCase
 {
-    /**
-     * @var UrlGeneratorInterface
-     */
-    private $router;
 
     public function setUp()
     {
         parent::setUp();
+
+        $client = static::createClient();
+        $kernel =  $client->getContainer()->get('kernel');
+        $application = new Application($kernel);
+
+        $application->setAutoExit(false);
+
+
+        $input = new ArrayInput([
+            'command' => 'doctrine:migrations:migrate',
+        ]);
+        $output = new NullOutput();
+        $application->run($input, $output);
+
     }
 
     public function test_it_can_store_files()
@@ -40,13 +51,11 @@ class ApiImageTest extends WebTestCase
                         $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
                         'dummy2.jpeg',
                         'image/jpeg',
-                        100
                     ),
                     new UploadedFile(
                         $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
                         'dummy3.jpeg',
                         'image/jpeg',
-                        100
                     )
                 ]
             ]
@@ -76,7 +85,6 @@ class ApiImageTest extends WebTestCase
                         $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
                         'dummy2.jpeg',
                         'image/jpeg',
-                        10*1024*1000
                     ),
                 ]
             ]
@@ -144,13 +152,11 @@ class ApiImageTest extends WebTestCase
                         $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
                         'dummy2.jpeg',
                         'image/jpeg',
-                        100
                     ),
                     new UploadedFile(
                         $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
                         'dummy3.jpeg',
                         'image/jpeg',
-                        100
                     )
                 ]
             ]

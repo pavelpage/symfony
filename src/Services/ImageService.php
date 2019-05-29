@@ -71,12 +71,13 @@ class ImageService
         $savedFiles = new SavedFiles();
         foreach ($filesArr as $file) {
             try {
+                $size = $file->getSize();
                 $fileName = $this->saveFileAndGetStoredName($file);
-                $imageItem = $this->addImageItemToDb($fileName, $file->getClientOriginalName(), $file->getClientSize());
+                $imageItem = $this->addImageItemToDb($fileName, $file->getClientOriginalName(), $size);
                 //                CreateResize::dispatch($imageItem->id);
                 $savedFiles->pushSavedFile($imageItem);
             } catch (\Exception $e) {
-                $savedFiles->pushError([$e->getCode(), $e->getMessage(), $file->getClientOriginalName()]);
+                $savedFiles->pushError([$e->getCode(), $e->getMessage(), $file->getClientOriginalName(), $e->getTraceAsString()]);
             }
         }
 
@@ -401,6 +402,26 @@ class ImageService
         $this->filesystem->remove($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName);
 
         $this->imageRepository->deleteResize($imageItem, $width, $height);
+
+        return true;
+    }
+
+    /**
+     * @param $imageId
+     * @return bool
+     * @throws \Exception
+     */
+    public function deleteAllImageResizes($imageId)
+    {
+        $imageItem = $entityManager = $this->imageRepository->find($imageId);
+        if (!$imageItem) {
+            throw new \Exception('No image with such id');
+        }
+        $resizes = $imageItem->getResizes();
+
+        foreach ($resizes as $resize) {
+            $this->deleteImageResize($imageId, $resize['width'], $resize['height']);
+        }
 
         return true;
     }

@@ -8,7 +8,6 @@ use App\Form\Base64FormType;
 use App\Form\ExternalUrlsType;
 use App\Form\ImageFormType;
 use App\Services\ImageService;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -138,6 +137,11 @@ class ApiImageController extends AbstractController
         );
     }
 
+    /**
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @throws \Exception
+     */
     public function deleteImageResize(Request $request)
     {
         $successDelete = $this->imageService->deleteImageResize(
@@ -149,8 +153,19 @@ class ApiImageController extends AbstractController
         ]);
     }
 
-    public function deleteAllImageResizes()
+    /**
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @throws \Exception
+     */
+    public function deleteAllImageResizes(Request $request)
     {
+        $successDelete = $this->imageService->deleteAllImageResizes(
+            $request->get('image_id')
+        );
 
+        return $this->json([
+            'deleted' => $successDelete,
+        ]);
     }
 }
