@@ -395,7 +395,7 @@ class ImageService
             $urlPackage = new UrlPackage($this->dependencyContainer->getParameter('app_host'), new StaticVersionStrategy(''));
 
             $result[] = [
-                'url' => $urlPackage->getUrl($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName),
+                'url' => trim($urlPackage->getUrl($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName), '?'),
                 'width' => $resize['width'],
                 'height' => $resize['height'],
             ];
@@ -420,7 +420,8 @@ class ImageService
 
         $resizeImageName = $this->getResizeImageName($imageItem->getName(), $width, $height);
 
-        $this->filesystem->remove($this->diskFolderName.'/'.$this->resizeFolderName. '/' . $resizeImageName);
+        $publicDir = $this->kernel->getProjectDir(). '/public/'.($this->diskFolderName.'/'.$this->resizeFolderName);
+        $this->filesystem->remove($publicDir . '/' . $resizeImageName);
 
         $this->imageRepository->deleteResize($imageItem, $width, $height);
 

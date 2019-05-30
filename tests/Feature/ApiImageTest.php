@@ -15,12 +15,17 @@ use Symfony\Bundle\FrameworkBundle\Console\Application;
 class ApiImageTest extends WebTestCase
 {
 
+    /**
+     * @var \Symfony\Bundle\FrameworkBundle\Client
+     */
+    private $client;
+
     public function setUp()
     {
         parent::setUp();
 
-        $client = static::createClient();
-        $kernel =  $client->getContainer()->get('kernel');
+        $this->client = static::createClient();
+        $kernel =  $this->client->getContainer()->get('kernel');
         $application = new Application($kernel);
 
         $application->setAutoExit(false);
@@ -36,7 +41,7 @@ class ApiImageTest extends WebTestCase
 
     public function test_it_can_store_files()
     {
-        $client = static::createClient();
+        $client = $this->client;
         copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
         copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg');
 
@@ -71,11 +76,11 @@ class ApiImageTest extends WebTestCase
 
     public function test_it_should_not_store_files_with_extra_size()
     {
+        $oldEnvValue = $_ENV['MAX_IMAGE_SIZE'];
         $_ENV['MAX_IMAGE_SIZE'] = 10;
-        $client = static::createClient();
-        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
+        copy($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
 
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.store-files'
         ), [
 
@@ -83,7 +88,7 @@ class ApiImageTest extends WebTestCase
             'image_form' => [
                 'files' => [
                     new UploadedFile(
-                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
+                        $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
                         'dummy2.jpeg',
                         'image/jpeg',
                     ),
@@ -91,15 +96,14 @@ class ApiImageTest extends WebTestCase
             ]
         ]);
 
-        $this->assertEquals(422, $client->getResponse()->getStatusCode());
+        $_ENV['MAX_IMAGE_SIZE'] = $oldEnvValue;
+        $this->assertEquals(422, $this->client->getResponse()->getStatusCode());
     }
 
     public function test_it_can_store_base64_strings_as_files()
     {
-        $client = static::createClient();
-
-        $base64 = file_get_contents($client->getContainer()->get('kernel')->getProjectDir().'/tests/base64_example.txt');
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $base64 = file_get_contents($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/base64_example.txt');
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.store-from-base64'
         ), [
             'base64_form' => [
@@ -109,8 +113,8 @@ class ApiImageTest extends WebTestCase
             ]
         ]);
 
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
-        $content = json_decode($client->getResponse()->getContent());
+        $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
+        $content = json_decode($this->client->getResponse()->getContent());
 
         $this->assertCount(1, $content->items);
         $this->assertCount(0, $content->errors);
@@ -118,8 +122,7 @@ class ApiImageTest extends WebTestCase
 
     public function test_it_should_not_store_incorrect_base64_strings()
     {
-        $client = static::createClient();
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.store-from-base64'
         ), [
             'base64_form' => [
@@ -129,7 +132,7 @@ class ApiImageTest extends WebTestCase
             ]
         ]);
 
-        $content = json_decode($client->getResponse()->getContent());
+        $content = json_decode($this->client->getResponse()->getContent());
 
         $this->assertCount(0, $content->items);
         $this->assertCount(1, $content->errors);
@@ -144,8 +147,7 @@ class ApiImageTest extends WebTestCase
         $width = 120;
         $height = 120;
 
-        $client = static::createClient();
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.create-resize'
         ), [
             'image_id' => $imageId,
@@ -155,7 +157,7 @@ class ApiImageTest extends WebTestCase
 
         $resizeName = self::$container->get(ImageService::class)->getResizeImageName($imageName, $width, $height);
 
-        $this->assertFileExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName);
+        $this->assertFileExists($this->client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName);
     }
 
     public function test_it_can_delete_all_resizes()
@@ -164,8 +166,7 @@ class ApiImageTest extends WebTestCase
         $imageId = $savedFiles[0]->id;
         $imageName = $savedFiles[0]->name;
 
-        $client = static::createClient();
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.create-resize'
         ), [
             'image_id' => $imageId,
@@ -173,7 +174,7 @@ class ApiImageTest extends WebTestCase
             'height' => 120,
         ]);
 
-        $client->request('DELETE', $client->getContainer()->get('router')->generate(
+        $this->client->request('DELETE', $this->client->getContainer()->get('router')->generate(
             'api.delete-all-resizes'
         ), [
             'image_id' => $imageId,
@@ -184,8 +185,8 @@ class ApiImageTest extends WebTestCase
         $resizeName1 = $imageService->getResizeImageName($imageName, 100, 100);
         $resizeName2 = $imageService->getResizeImageName($imageName, 120, 120);
 
-        $this->assertFileNotExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName1);
-        $this->assertFileNotExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName2);
+        $this->assertFileNotExists($this->client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName1);
+        $this->assertFileNotExists($this->client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName2);
     }
 
     public function test_it_delete_default_resize()
@@ -194,8 +195,7 @@ class ApiImageTest extends WebTestCase
         $imageId = $savedFiles[0]->id;
         $imageName = $savedFiles[0]->name;
 
-        $client = static::createClient();
-        $client->request('DELETE', $client->getContainer()->get('router')->generate(
+        $this->client->request('DELETE', $this->client->getContainer()->get('router')->generate(
             'api.delete-resize'
         ), [
             'image_id' => $imageId,
@@ -206,7 +206,7 @@ class ApiImageTest extends WebTestCase
         $imageService = self::$container->get(ImageService::class);
         $resizeName = $imageService->getResizeImageName($imageName, 100, 100);
 
-        $this->assertFileNotExists($client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName);
+        $this->assertFileNotExists($this->client->getContainer()->get('kernel')->getProjectDir().'/public/upload/resize/'.$resizeName);
     }
 
     public function test_it_can_get_list_of_resizes()
@@ -218,14 +218,13 @@ class ApiImageTest extends WebTestCase
         $imageService = self::$container->get(ImageService::class);
         $resizeName = $imageService->getResizeImageName($imageName, 100, 100);
 
-        $client = static::createClient();
-        $client->request('GET', $client->getContainer()->get('router')->generate(
+        $this->client->request('GET', $this->client->getContainer()->get('router')->generate(
             'api.get-image-resizes'
         ), [
             'image_id' => $imageId,
         ]);
 
-        $content = json_decode($client->getResponse()->getContent());
+        $content = json_decode($this->client->getResponse()->getContent());
 
 
         $this->assertEquals($_ENV['APP_HOST'].'upload/resize/'.$resizeName, $content[0]->url);
@@ -233,12 +232,11 @@ class ApiImageTest extends WebTestCase
 
     private function saveFiles()
     {
-        $client = static::createClient();
-        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
-        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg');
+        copy($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
+        copy($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg');
 
 
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.store-files'
         ), [
 
@@ -246,12 +244,12 @@ class ApiImageTest extends WebTestCase
             'image_form' => [
                 'files' => [
                     new UploadedFile(
-                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
+                        $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
                         'dummy2.jpeg',
                         'image/jpeg',
                     ),
                     new UploadedFile(
-                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
+                        $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
                         'dummy3.jpeg',
                         'image/jpeg',
                     )
@@ -259,7 +257,7 @@ class ApiImageTest extends WebTestCase
             ]
         ]);
 
-        $content = json_decode($client->getResponse()->getContent());
+        $content = json_decode($this->client->getResponse()->getContent());
 
         return $content->items;
     }
