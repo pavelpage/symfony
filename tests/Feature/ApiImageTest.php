@@ -9,7 +9,6 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\NullOutput;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
-use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 
 class ApiImageTest extends WebTestCase
@@ -25,7 +24,7 @@ class ApiImageTest extends WebTestCase
         parent::setUp();
 
         $this->client = static::createClient();
-        $kernel =  $this->client->getContainer()->get('kernel');
+        $kernel =  self::$container->get('kernel');
         $application = new Application($kernel);
 
         $application->setAutoExit(false);
@@ -37,16 +36,21 @@ class ApiImageTest extends WebTestCase
         $output = new NullOutput();
         $application->run($input, $output);
 
+        $input = new ArrayInput([
+            'command' => 'doctrine:fixtures:load',
+        ]);
+        $output = new NullOutput();
+        $application->run($input, $output);
+
     }
 
     public function test_it_can_store_files()
     {
-        $client = $this->client;
-        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
-        copy($client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg');
+        copy($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
+        copy($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg');
 
 
-        $client->request('POST', $client->getContainer()->get('router')->generate(
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
             'api.store-files'
         ), [
 
@@ -54,22 +58,22 @@ class ApiImageTest extends WebTestCase
             'image_form' => [
                 'files' => [
                     new UploadedFile(
-                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
+                        $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg',
                         'dummy2.jpeg',
                         'image/jpeg',
                     ),
                     new UploadedFile(
-                        $client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
+                        $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy3.jpeg',
                         'dummy3.jpeg',
                         'image/jpeg',
                     )
                 ]
             ]
-        ]);
+        ], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
-        $this->assertEquals(200, $client->getResponse()->getStatusCode());
+        $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
 
-        $content = json_decode($client->getResponse()->getContent());
+        $content = json_decode($this->client->getResponse()->getContent());
         $this->assertCount(2, $content->items);
         $this->assertCount(0, $content->errors);
     }
@@ -94,7 +98,7 @@ class ApiImageTest extends WebTestCase
                     ),
                 ]
             ]
-        ]);
+        ], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $_ENV['MAX_IMAGE_SIZE'] = $oldEnvValue;
         $this->assertEquals(422, $this->client->getResponse()->getStatusCode());
@@ -111,7 +115,7 @@ class ApiImageTest extends WebTestCase
                     $base64
                 ]
             ]
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $this->assertEquals(200, $this->client->getResponse()->getStatusCode());
         $content = json_decode($this->client->getResponse()->getContent());
@@ -130,7 +134,7 @@ class ApiImageTest extends WebTestCase
                     'wrong base 64 string'
                 ]
             ]
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $content = json_decode($this->client->getResponse()->getContent());
 
@@ -153,7 +157,7 @@ class ApiImageTest extends WebTestCase
             'image_id' => $imageId,
             'width' => $width,
             'height' => $height,
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $resizeName = self::$container->get(ImageService::class)->getResizeImageName($imageName, $width, $height);
 
@@ -172,13 +176,13 @@ class ApiImageTest extends WebTestCase
             'image_id' => $imageId,
             'width' => 120,
             'height' => 120,
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $this->client->request('DELETE', $this->client->getContainer()->get('router')->generate(
             'api.delete-all-resizes'
         ), [
             'image_id' => $imageId,
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
 
         $imageService = self::$container->get(ImageService::class);
@@ -201,7 +205,7 @@ class ApiImageTest extends WebTestCase
             'image_id' => $imageId,
             'width' => 100,
             'height' => 100,
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $imageService = self::$container->get(ImageService::class);
         $resizeName = $imageService->getResizeImageName($imageName, 100, 100);
@@ -222,7 +226,7 @@ class ApiImageTest extends WebTestCase
             'api.get-image-resizes'
         ), [
             'image_id' => $imageId,
-        ]);
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $content = json_decode($this->client->getResponse()->getContent());
 
@@ -255,7 +259,7 @@ class ApiImageTest extends WebTestCase
                     )
                 ]
             ]
-        ]);
+        ], ['HTTP_X-AUTH-TOKEN' => 'secret']);
 
         $content = json_decode($this->client->getResponse()->getContent());
 
