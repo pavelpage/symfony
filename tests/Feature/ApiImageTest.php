@@ -234,6 +234,15 @@ class ApiImageTest extends WebTestCase
         $this->assertEquals($_ENV['APP_HOST'].'upload/resize/'.$resizeName, $content[0]->url);
     }
 
+    public function test_user_cannot_access_api_with_wrong_token()
+    {
+        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
+            'api.store-files'
+        ), [],[], ['HTTP_X-AUTH-TOKEN' => 'wrong token']);
+
+        $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+    }
+
     private function saveFiles()
     {
         copy($this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy.jpeg', $this->client->getContainer()->get('kernel')->getProjectDir().'/tests/dummy2.jpeg');
