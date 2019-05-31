@@ -75,7 +75,7 @@ class ApiImageController extends AbstractController
         }
         else {
             return $this->json([
-                'items' => $form->getData(),
+                'items' => [],
                 'errors' => $form->getErrors(),
             ]);
         }
@@ -98,7 +98,7 @@ class ApiImageController extends AbstractController
         }
         else {
             return $this->json([
-                'items' => $form->getData(),
+                'items' => [],
                 'errors' => $form->getErrors(),
             ]);
         }
@@ -140,13 +140,19 @@ class ApiImageController extends AbstractController
     /**
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\JsonResponse
-     * @throws \Exception
      */
     public function deleteImageResize(Request $request)
     {
-        $successDelete = $this->imageService->deleteImageResize(
-            $request->get('image_id'), $request->get('width'), $request->get('height')
-        );
+        try {
+            $successDelete = $this->imageService->deleteImageResize(
+                $request->get('image_id'), $request->get('width'), $request->get('height')
+            );
+        } catch (\Exception $e) {
+            return $this->json([
+                'deleted' => false,
+                'errors' => $e->getMessage(),
+            ], $status = 422);
+        }
 
         return $this->json([
             'deleted' => $successDelete,

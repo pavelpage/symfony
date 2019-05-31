@@ -234,13 +234,35 @@ class ApiImageTest extends WebTestCase
         $this->assertEquals($_ENV['APP_HOST'].'upload/resize/'.$resizeName, $content[0]->url);
     }
 
-    public function test_user_cannot_access_api_with_wrong_token()
+    /**
+     * @dataProvider provideUrls
+     */
+    public function test_user_cannot_access_api_post_urls_with_wrong_token($url)
     {
-        $this->client->request('POST', $this->client->getContainer()->get('router')->generate(
-            'api.store-files'
-        ), [],[], ['HTTP_X-AUTH-TOKEN' => 'wrong token']);
+        $this->client->request('POST', $url, [],[], ['HTTP_X-AUTH-TOKEN' => 'wrong token']);
 
         $this->assertEquals(403, $this->client->getResponse()->getStatusCode());
+    }
+
+    public function provideUrls()
+    {
+        return [
+            ['/api/images/store-files'],
+            ['/api/images/store-from-remote-source'],
+            ['/api/images/store-from-base64'],
+            ['/api/images/create-resize'],
+        ];
+    }
+
+    public function test_it_cannot_delete_resize_for_empty_image_id()
+    {
+        $this->client->request('DELETE', $this->client->getContainer()->get('router')->generate(
+            'api.delete-resize'
+        ), [
+            'image_id' => null,
+        ], [], ['HTTP_X-AUTH-TOKEN' => 'secret']);
+
+        $this->assertEquals(422, $this->client->getResponse()->getStatusCode());
     }
 
     private function saveFiles()

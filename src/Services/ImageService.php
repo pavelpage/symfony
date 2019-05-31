@@ -313,7 +313,7 @@ class ImageService
      */
     public function createResize($imageId, $width = 100, $height = 100)
     {
-        $imageItem = $entityManager = $this->imageRepository->find($imageId);
+        $imageItem = $this->imageRepository->find($imageId);
         if (!$imageItem) {
             throw new \Exception('No image with such id');
         }
@@ -381,7 +381,7 @@ class ImageService
      */
     public function getImageResizes($imageId)
     {
-        $imageItem = $entityManager = $this->imageRepository->find($imageId);
+        $imageItem = $this->imageRepository->find($imageId);
         if (!$imageItem) {
             throw new \Exception('No image with such id');
         }
