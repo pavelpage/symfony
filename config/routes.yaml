@@ -34,6 +34,11 @@ api.delete-all-resizes:
   controller: 'App\Controller\ApiImageController::deleteAllImageResizes'
   methods: DELETE
 api.test:
-    path: /test
-    controller: 'App\Controller\ApiImageController::testUpload'
-    methods: GET
+  path: /test
+  controller: 'App\Controller\ApiImageController::testUpload'
+  methods: GET
+api_login_check:
+  path: /api/login_check
+test_jwt:
+  path: /test-jwt
+  controller: 'App\Controller\TestController::testJWT'
