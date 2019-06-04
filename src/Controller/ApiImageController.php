@@ -8,10 +8,13 @@ use App\Form\Base64FormType;
 use App\Form\ExternalUrlsType;
 use App\Form\ImageFormType;
 use App\Services\ImageService;
+use Nelmio\ApiDocBundle\Annotation\Model;
+use Nelmio\ApiDocBundle\Annotation\Security;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Swagger\Annotations as SWG;
 
 class ApiImageController extends AbstractController
 {
@@ -39,6 +42,31 @@ class ApiImageController extends AbstractController
              ]);
     }
 
+    /**
+     * Method for uploading files to special local disk.
+     *
+     * @SWG\Response(
+     *     response=200,
+     *     description="Returns the items associated with uploaded images",
+     *     @SWG\Schema(
+     *         type="array",
+     *         @SWG\Items(ref=@Model(type=Image::class, groups={"full"}))
+     *     )
+     * )
+     * @SWG\Response(
+     *     response=422,
+     *     description="Error for invalid request data",
+     * )
+     * @SWG\Parameter(
+     *     name="image_form[files][]",
+     *     in="formData",
+     *     type="file",
+     *     description="The field used to upload multiple files",
+     * )
+     *
+     * @SWG\Tag(name="api.store-files")
+     * @Security(name="Bearer")
+     */
     public function storeFile(Request $request)
     {
         $image = new Image();
@@ -86,6 +114,15 @@ class ApiImageController extends AbstractController
         ]);
     }
 
+    /**
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\JsonResponse
+     * @SWG\Response(
+     *     response=200,
+     *     description="Returns the items, converted from base64 to real images",
+     * )
+     * @SWG\Tag(name="api.store-from-base64")
+     */
     public function saveFileFromBase64(Request $request)
     {
         $image = new Image();
@@ -110,9 +147,35 @@ class ApiImageController extends AbstractController
     }
 
     /**
+     *
+     * Creates resize for previously uploaded images
+     *
      * @param Request $request
      * @return \Symfony\Component\HttpFoundation\JsonResponse
      * @throws \Exception
+     * @SWG\Response(
+     *     response=200,
+     *     description="Returns the url for generated image resize",
+     * )
+     * @SWG\Parameter(
+     *     name="image_id",
+     *     in="formData",
+     *     type="integer",
+     *     description="The field used to upload files"
+     * )
+     * @SWG\Parameter(
+     *     name="width",
+     *     in="formData",
+     *     type="integer",
+     *     description="The width of the resize"
+     * )
+     * @SWG\Parameter(
+     *     name="height",
+     *     in="formData",
+     *     type="integer",
+     *     description="The height of the resize"
+     * )
+     * @SWG\Tag(name="api.create-resize")
      */
     public function createResize(Request $request)
     {
