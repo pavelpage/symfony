@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+
+  php-fpm:
+    image: php:7.3-fpm
+    build: ..
+    ports:
+      - '9000:9000'
+    volumes:
+      - ../:/symfony
+    working_dir: /symfony
+    container_name: 'php-fpm'
+
+  apache:
+    image: httpd:2.4
+    ports:
+      - 80:80
+    volumes:
+      - ./src:/usr/local/apache2/htdocs
+
+
+  image: postgres:alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db_dumps:/dumps
+    environment:
+      POSTGRES_PASSWORD: fsdfs345365fdFFDDsss
+    ports:
+      - ${PG_PORT}:5432
+    networks:
+      - main
+
+
+networks:
+  main:
+volumes:
+  pgdata:
