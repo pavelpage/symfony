@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+
+  php-fpm:
+    image: php:7.3-fpm
+    build: .
+    ports:
+      - '9000:9000'
+    volumes:
+      - ../:/symfony
+    working_dir: /symfony
+    container_name: 'php-fpm'
+
+  nginx:
+    image: nginx:1.17.0
+    container_name: 'nginx'
+    working_dir: /symfony
+    ports:
+      - '7777:80'
+    volumes:
+      - ../:/symfony
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+
+  postgres:
+    image: postgres:11.3
+    ports:
+      - '5432:5432'
+    container_name: 'postgresql'
+    working_dir: /symfony
+    restart: always
+    environment:
+      POSTGRES_DB: 'test_docker'
+      POSTGRES_USER: 'postgres'
+      POSTGRES_PASSWORD: 'db_pass'
+    volumes:
+      - ../../data/dump:/app/dump
+      - ../../data/postgresql:/var/lib/postgresql/data
