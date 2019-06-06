@@ -32,6 +32,7 @@ class ApiImageController extends AbstractController
 
     public function testUpload()
     {
+        phpinfo();exit;
         $image = new Image();
         $form = $this->createForm(ImageFormType::class, $image);
         return $this->render('new.html.twig', [
