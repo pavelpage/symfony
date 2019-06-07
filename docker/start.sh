@@ -21,11 +21,11 @@ chmod +x bin/console
 
 echo -en '\n'
 echo 'Runnin migrations and loading fixtures'
-php bin/console doctrine:migrations:migrate
+docker exec php-fpm php bin/console doctrine:migrations:migrate
 
 
 echo -en '\n'
-php bin/console doctrine:fixtures:load
+docker exec php-fpm php bin/console doctrine:fixtures:load
 
 echo -en '\n'
 echo 'Everything is ok'
