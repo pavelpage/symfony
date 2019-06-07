@@ -15,6 +15,10 @@ echo -n "Dependencies were installed ${green}${toend}[OK]"
 
 cd ../
 
+# setting small fix to allow upload files
+chmod 777 public
+chmod +x bin/console
+
 echo -en '\n'
 echo 'Runnin migrations and loading fixtures'
 php bin/console doctrine:migrations:migrate
@@ -22,11 +26,6 @@ php bin/console doctrine:migrations:migrate
 
 echo -en '\n'
 php bin/console doctrine:fixtures:load
-
-# setting small fix to allow upload files
-
-chmod 777 public
-chmod +x bin/console
 
 echo -en '\n'
 echo 'Everything is ok'

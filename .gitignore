@@ -9,7 +9,6 @@
 ###< symfony/framework-bundle ###
 /.idea
 .env
-.env.test
 .env.dev
 ###> symfony/phpunit-bridge ###
 .phpunit

@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 cd ../
-composer install
+docker exec php-fpm composer install
