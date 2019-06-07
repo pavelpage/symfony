@@ -13,16 +13,18 @@ echo 'And now installing composer dependencies.'
 echo -en '\n'
 echo -n "Dependencies were installed ${green}${toend}[OK]"
 
+cd ../
+
 echo -en '\n'
 echo 'Runnin migrations and loading fixtures'
-./php bin/console doctrine:migrations:migrate
+php bin/console doctrine:migrations:migrate
 
 
 echo -en '\n'
-./php bin/console doctrine:fixtures:load
+php bin/console doctrine:fixtures:load
 
 # setting small fix to allow upload files
-cd ../
+
 chmod 777 public
 chmod +x bin/console
 
