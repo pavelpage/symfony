@@ -16,8 +16,11 @@ RUN apt-get install -y \
   && docker-php-ext-configure zip --with-libzip \
   && docker-php-ext-install zip
 
-RUN apt-get install -y libpq-dev libpng-dev\
+RUN apt-get install -y libpq-dev libpng-dev libjpeg-dev\
     && docker-php-ext-install pdo pdo_pgsql
+
+RUN docker-php-ext-configure gd --with-jpeg-dir=/usr/include/
+
 
 RUN docker-php-ext-install pcntl gd
 
